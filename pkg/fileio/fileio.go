@@ -6,10 +6,11 @@ import (
     "os"
     "strconv"
     "strings"
+    "unicode"
 )
 
 type Word struct {
-    Word string
+    Val  string
     Freq float32
 }
 
@@ -27,8 +28,11 @@ func ReadWords(done <-chan interface{}, path string) <-chan Word {
         scanner := bufio.NewScanner(file)
         for scanner.Scan() {
             w, f := splitLine(scanner.Text())
+            if(!unicode.IsLetter(rune(w[0]))) {
+                continue
+            }
             wordStream <- Word{
-                Word: w,
+                Val: strings.ToLower(w),
                 Freq: f,
             }
         }
