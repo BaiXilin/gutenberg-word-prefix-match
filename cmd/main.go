@@ -16,9 +16,8 @@ func main() {
     
     root := trie.NewTrie()
     root.BuildTrie(done, wordStream)
-    //for w := range wordStream {
-    //    fmt.Printf("%+v\n", w)
-    //}
+    
+
 
     fmt.Println("done")
 }

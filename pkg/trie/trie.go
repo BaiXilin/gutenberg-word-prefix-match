@@ -24,7 +24,8 @@ func (root *TrieNode) BuildTrie(done <-chan interface{}, wordStream <-chan filei
     // children nodes
     // organized in a map. The keys are words' initial letter
     for i := 'a'; i <= 'z'; i++ {
-        root.children[i] = new(TrieNode)
+        //root.children[i] = new(TrieNode)
+        root.children[i] = NewTrie()
     }
     
     // launch 26 goroutines. Each will handle words start with one letter
@@ -32,29 +33,59 @@ func (root *TrieNode) BuildTrie(done <-chan interface{}, wordStream <-chan filei
     for i := 'a'; i <= 'z'; i++ {
         trieBuilders[i] = make(chan fileio.Word)
         defer close(trieBuilders[i])
-        go root.children[i].trieBuilder(done, trieBuilders[i])
+        go root.children[i].trieBuilder(trieBuilders[i])
     }
 
-    for w := range wordStream {
-            // send the word to its corresponding worker
-            fmt.Println([]rune(w.Val)[0])
-            trieBuilders[[]rune(w.Val)[0]] <- w
+    for {
+        select {
+            case <-done:
+                return root
+            case w, ok := <-wordStream:
+                if !ok {
+                    return root
+                }
+                // send the word to its corresponding worker
+                trieBuilders[[]rune(w.Val)[0]] <- w
+        }
     }
     
     return root
 }
 
-func (root *TrieNode) trieBuilder(done <-chan interface{}, wordStream <-chan fileio.Word) {
+func (root *TrieNode) trieBuilder(wordStream <-chan fileio.Word) {
     for w := range wordStream {
-        //select {
-        //case <-done:
-        //    return
-        //}
         fmt.Printf("TrieBuilder %v working on %v\n", w.Val[0], w.Val)
+        // first character determines which worker to handle the word
+        // get rid of it now
+        runes := []rune(w.Val)[1:]
+        err := root.Put(runes, w)
+        if err != nil {
+            fmt.Printf("trieBuilder err:%v\n", err)
+        }
     }
 }
 
 // put a word into the trie
-func (root *TrieNode) Put(w fileio.Word) error {
+func (root *TrieNode) Put(runes []rune, w fileio.Word) error {
+    // recursion base case
+    if len(runes) == 0 && !root.isCompleteWord{
+        root.isCompleteWord = true
+        root.value = w
+        return nil
+    } else if len(runes) == 0 && root.isCompleteWord {
+        return fmt.Errorf("Duplicate words")
+    }
+    // the runes is not empty, need to go down the recursion
+    // check if the next child already exists
+    _, exist := root.children[runes[0]]
+    if !exist {
+        // if it doesn't exist, initialize first
+        root.children[runes[0]] = NewTrie()
+
+    }
+    // recursively go to the child
+    first, runes := runes[0], runes[1:]
+    root.children[first].Put(runes, w)
+    
     return nil
 }
