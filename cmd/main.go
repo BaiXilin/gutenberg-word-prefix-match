@@ -20,4 +20,12 @@ func main() {
 
 
     fmt.Println("done")
+
+    // check if trie is successful
+    upburstFreq, upburstExist := root.WordIsIn("upburst")
+    fmt.Printf("upburst freq: %v, exist: %v\n", upburstFreq, upburstExist)
+
+    // some word that does not exist
+    upbxFreq, upbxExist := root.WordIsIn("upbx")
+    fmt.Printf("upbx freq: %v, exist: %v\n", upbxFreq, upbxExist)
 }

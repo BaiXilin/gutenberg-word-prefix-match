@@ -89,3 +89,24 @@ func (root *TrieNode) Put(runes []rune, w fileio.Word) error {
     
     return nil
 }
+
+// identify if a word is in the trie, return its associated freq if found
+func (root *TrieNode) WordIsIn(target string) (float32, bool) {
+    // recursion base case
+    if len(target) == 0 && root.isCompleteWord {
+        return root.value.Freq, true
+    } else if len(target) == 0 && !root.isCompleteWord {
+        return float32(0), false
+    }
+
+    // if the target word is not empty, try to move down the recursion level
+    first := []rune(target)[0]
+    _, exist := root.children[first]
+    if !exist {
+        // no more level to go down
+        return float32(0), false
+    }
+    // if children exists, go down to that children
+    target = string([]rune(target)[1:])
+    return root.children[first].WordIsIn(target)
+}
